@@ -7,6 +7,18 @@ API do Spark IA: plataforma de estudos para o ENEM, com módulo de flashcards, b
 - NestJS (TypeScript) + Prisma ORM + PostgreSQL
 - Autenticação via `@nestjs/jwt`
 
+## Banco de dados local
+
+Postgres sobe via Docker Compose — todo mundo do time usa o mesmo banco local, sem instalar Postgres na máquina:
+
+```bash
+cp .env.example .env    e
+docker compose up -d    # sobe o Postgres em localhost:5432
+npx prisma migrate dev  # aplica as migrations existentes no banco local
+```
+
+`docker compose down` para parar o banco; `docker compose down -v` para apagar também os dados (recriar do zero).
+
 ## Comandos
 
 ```bash
