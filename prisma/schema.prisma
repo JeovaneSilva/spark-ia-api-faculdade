@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -19,9 +13,185 @@ model User {
   email    String @unique
   password String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   lastAccess DateTime?
 
+  flashcards       Flashcard[]
+  attempts         QuestionAttempt[]
+  chatbotSessions  ChatbotSession[]
+  studySessions    StudySession[]
+  flashcardReviews FlashcardReview[]
+
   @@map("users")
+}
+
+enum Subject {
+  PORTUGUES
+  LITERATURA
+  INGLES
+  ESPANHOL
+  ARTES
+  EDUCACAO_FISICA
+  HISTORIA
+  GEOGRAFIA
+  FILOSOFIA
+  SOCIOLOGIA
+  FISICA
+  QUIMICA
+  BIOLOGIA
+  MATEMATICA
+  REDACAO
+
+  @@map("subjects")
+}
+
+enum QuestionType {
+  ENEM_OFFICIAL
+  CHATBOT_GENERATED
+
+  @@map("question_types")
+}
+
+enum AnswerOption {
+  A
+  B
+  C
+  D
+  E
+
+  @@map("answer_options")
+}
+
+enum StudySessionType {
+  QUESTION_BANK
+  CHATBOT
+  FLASHCARDS
+
+  @@map("study_session_types")
+}
+
+enum ReviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+
+  @@map("review_difficulties")
+}
+
+model Question {
+  id_question String @id @default(uuid(7))
+
+  statement     String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  optionE       String
+  correctOption AnswerOption
+  explanation   String?
+
+  type     QuestionType
+  subject  Subject
+  topic    String?
+  examYear Int?
+
+  id_chatbot_session String?
+  chatbotSession     ChatbotSession? @relation(fields: [id_chatbot_session], references: [id_chatbot_session])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts QuestionAttempt[]
+
+  @@map("questions")
+}
+
+model Flashcard {
+  id_flashcard String @id @default(uuid(7))
+
+  id_user String
+  user    User   @relation(fields: [id_user], references: [id_user])
+
+  question String
+  answer   String
+  subject  Subject
+  topic    String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastReviewedAt DateTime?
+
+  reviews FlashcardReview[]
+
+  @@map("flashcards")
+}
+
+model QuestionAttempt {
+  id_attempt String @id @default(uuid(7))
+
+  id_user String
+  user    User   @relation(fields: [id_user], references: [id_user])
+
+  id_question String
+  question    Question @relation(fields: [id_question], references: [id_question])
+
+  id_study_session String?
+  studySession     StudySession? @relation(fields: [id_study_session], references: [id_study_session])
+
+  userAnswer          AnswerOption
+  isCorrect           Boolean
+  responseTimeSeconds Int?
+
+  createdAt DateTime @default(now())
+
+  @@map("question_attempts")
+}
+
+model ChatbotSession {
+  id_chatbot_session String @id @default(uuid(7))
+
+  id_user String
+  user    User   @relation(fields: [id_user], references: [id_user])
+
+  requestedTopic String
+
+  createdAt DateTime @default(now())
+
+  questions Question[]
+
+  @@map("chatbot_sessions")
+}
+
+model StudySession {
+  id_study_session String @id @default(uuid(7))
+
+  id_user String
+  user    User   @relation(fields: [id_user], references: [id_user])
+
+  type     StudySessionType
+  examYear Int?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  attempts QuestionAttempt[]
+
+  @@map("study_sessions")
+}
+
+model FlashcardReview {
+  id_review String @id @default(uuid(7))
+
+  id_flashcard String
+  flashcard    Flashcard @relation(fields: [id_flashcard], references: [id_flashcard])
+
+  id_user String
+  user    User   @relation(fields: [id_user], references: [id_user])
+
+  difficulty ReviewDifficulty
+
+  reviewedAt DateTime @default(now())
+
+  @@map("flashcard_reviews")
 }
