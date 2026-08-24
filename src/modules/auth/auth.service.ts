@@ -25,4 +25,8 @@ export class AuthService {
     return this.generateToken(user);
   }
 
+  async loginWithGoogle(user: {id_user:string,email: string}) {
+    return this.generateToken(user);
+  }
+
 }

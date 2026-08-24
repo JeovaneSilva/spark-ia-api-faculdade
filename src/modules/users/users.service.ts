@@ -25,6 +25,15 @@ export class UsersService {
     return this.repository.createUser({...data, password: hash});
   }
 
+  async findOrCreateFromGoogle(email:string, name:string) {
+    const userExist = await this.findUserByEmail(email);
+    if (!userExist) {
+      const newUser = await this.repository.createFromGoogle(email, name);
+      return newUser;
+    }
+    return userExist;
+  }
+
   async findUserById(id_user: string): Promise<ReturnUserDTO | null> {
     const user = await this.repository.findUserById(id_user);
     return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;

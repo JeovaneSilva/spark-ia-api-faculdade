@@ -12,6 +12,16 @@ export class UsersRepository {
     });
   }
 
+  async createFromGoogle(email:string, name:string) {
+    return this.prisma.user.create({
+      data: {
+        email,
+        name,
+        password: null,
+      },
+    });
+  }
+
   async findUserByEmail(email: string) {
     return this.prisma.user.findFirst({
       where: { email: email },
