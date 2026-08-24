@@ -1,24 +1,43 @@
-
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { UsersRepository } from './users.repository';
+import { CreateUserDTO } from './DTOs/createUser.dto';
+import { ReturnUserDTO } from './DTOs/returnUser.dto';
+import * as bcrypt from 'bcrypt';
 
 export type User = any;
 
 @Injectable()
 export class UsersService {
-    private readonly users = [
-        {
-            userId: 1,
-            username: 'john',
-            password: 'changeme',
-        },
-        {
-            userId: 2,
-            username: 'maria',
-            password: 'guess',
-        },
-    ];
+  constructor(private readonly repository: UsersRepository) {}
 
-    async findOne(username: string): Promise<User | undefined> {
-        return this.users.find(user => user.username === username);
+  async findUserByEmail(email: string){
+    const user = await this.repository.findUserByEmail(email);
+
+    return user
+  }
+
+  async createUser(data: CreateUserDTO) {
+    const userExists = await this.findUserByEmail(data.email);
+    if (userExists) {
+      throw new ConflictException('Usuario já existe');
     }
+    const hash = await bcrypt.hash(data.password, 10);
+    return this.repository.createUser({...data, password: hash});
+  }
+
+  async findUserById(id_user: string): Promise<ReturnUserDTO | null> {
+    const user = await this.repository.findUserById(id_user);
+    return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
+  }
+
+  async deleteUser(id_user: string) {
+    return this.repository.deleteUser(id_user);
+  }
+
+  async updateUser(id_user: string, data: Partial<CreateUserDTO>) {
+    const password = data.password ? await bcrypt.hash(data.password, 10) : undefined;
+    const updatedData = { ...data, password };
+    return this.repository.updateUser(id_user, updatedData);
+  }
+
 }
