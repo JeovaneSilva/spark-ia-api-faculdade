@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './DTOs/login.dto';
 import { AuthRepository } from './auth.repository';
 
@@ -19,7 +20,7 @@ export class AuthService {
 
   async signIn(data: LoginDTO) {
     const user = await this.repo.signIn(data.email)
-    if (user?.password !== data.password) {
+    if (!user || !user.password || !(await bcrypt.compare(data.password, user.password))) {
       throw new UnauthorizedException();
     }
     return this.generateToken(user);
