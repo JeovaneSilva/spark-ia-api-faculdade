@@ -185,7 +185,7 @@ model FlashcardReview {
   id_review String @id @default(uuid(7))
 
   id_flashcard String
-  flashcard    Flashcard @relation(fields: [id_flashcard], references: [id_flashcard])
+  flashcard    Flashcard @relation(fields: [id_flashcard], references: [id_flashcard], onDelete: Cascade)
 
   id_user String
   user    User   @relation(fields: [id_user], references: [id_user])
