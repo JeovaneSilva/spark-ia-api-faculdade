@@ -39,14 +39,18 @@ export class UsersService {
     return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
   }
 
-  async deleteUser(id_user: string) {
-    return this.repository.deleteUser(id_user);
+  async deleteUser(id_user: string): Promise<ReturnUserDTO> {
+    const user = await this.repository.deleteUser(id_user);
+    // nunca devolver o hash da senha na resposta
+    return { id_user: user.id_user, email: user.email, name: user.name };
   }
 
-  async updateUser(id_user: string, data: Partial<CreateUserDTO>) {
+  async updateUser(id_user: string, data: Partial<CreateUserDTO>): Promise<ReturnUserDTO> {
     const password = data.password ? await bcrypt.hash(data.password, 10) : undefined;
     const updatedData = { ...data, password };
-    return this.repository.updateUser(id_user, updatedData);
+    const user = await this.repository.updateUser(id_user, updatedData);
+    // nunca devolver o hash da senha na resposta
+    return { id_user: user.id_user, email: user.email, name: user.name };
   }
 
 }
