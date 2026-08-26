@@ -13,10 +13,10 @@ export class ChatbotService {
     @Inject(QUESTION_GENERATOR) private readonly generator: QuestionGenerator,
   ) {}
 
-  async generateQuestions(data: GenerateQuestionsDTO) {
+  async generateQuestions(data: GenerateQuestionsDTO, id_user: string) {
     const quantity = data.quantity ?? DEFAULT_QUANTITY;
 
-    const session = await this.repository.createSession(data.id_user, data.topic);
+    const session = await this.repository.createSession(id_user, data.topic);
 
     const drafts = await this.generator.generate({
       topic: data.topic,

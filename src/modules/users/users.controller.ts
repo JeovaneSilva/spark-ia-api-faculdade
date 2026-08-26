@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 import { CreateUserDTO } from './DTOs/createUser.dto';
 import { ReturnUserDTO } from './DTOs/returnUser.dto';
@@ -23,23 +25,23 @@ export class usersController {
     return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
   }
 
+  // /me em vez de receber id_user por fora — só dá pra consultar/editar/
+  // apagar a própria conta, o id vem do token, não do que o client manda.
   @UseGuards(AuthGuard('jwt'))
-  @Get('id')
-  async findUserById(@Query('id_user') id_user: string): Promise<ReturnUserDTO | null> {
-    const user = await this.service.findUserById(id_user);
-    return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
+  @Get('me')
+  async findMe(@CurrentUser() user: AuthenticatedUser): Promise<ReturnUserDTO | null> {
+    return this.service.findUserById(user.id_user);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Delete('id')
-  async deleteUser(@Query('id_user') id_user: string) {
-    return this.service.deleteUser(id_user);
+  @Delete('me')
+  async deleteMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.service.deleteUser(user.id_user);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Patch('update')
-  async updateUser(@Query('id_user') id_user: string, @Body() data: UpdateUserDTO) {
-
-    return this.service.updateUser(id_user, data);
+  @Patch('me')
+  async updateMe(@CurrentUser() user: AuthenticatedUser, @Body() data: UpdateUserDTO) {
+    return this.service.updateUser(user.id_user, data);
   }
 }

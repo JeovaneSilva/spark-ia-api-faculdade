@@ -8,8 +8,8 @@ import { ReviewDifficulty, Subject } from '../../generated/prisma/client';
 export class FlashcardsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateFlashcardDTO) {
-    return this.prisma.flashcard.create({ data });
+  async create(data: CreateFlashcardDTO, id_user: string) {
+    return this.prisma.flashcard.create({ data: { ...data, id_user } });
   }
 
   async findByUser(id_user: string, subject?: Subject) {
