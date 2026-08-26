@@ -1,7 +1,9 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { QuestionsService } from './questions.service';
 import { QuestionType, Subject } from '../../generated/prisma/client';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('questions')
 export class QuestionsController {
   constructor(private readonly service: QuestionsService) {}

@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { FlashcardsService } from './flashcards.service';
 import { CreateFlashcardDTO } from './DTOs/createFlashcard.dto';
 import { UpdateFlashcardDTO } from './DTOs/updateFlashcard.dto';
 import { CreateFlashcardReviewDTO } from './DTOs/createFlashcardReview.dto';
 import { Subject } from '../../generated/prisma/client';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('flashcards')
 export class FlashcardsController {
   constructor(private readonly service: FlashcardsService) {}
