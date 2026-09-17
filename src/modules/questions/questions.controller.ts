@@ -14,8 +14,25 @@ export class QuestionsController {
     @Query('subject') subject?: Subject,
     @Query('topic') topic?: string,
     @Query('id_chatbot_session') id_chatbot_session?: string,
+    @Query('examYear') examYear?: string,
   ) {
-    return this.service.findMany({ type, subject, topic, id_chatbot_session });
+    return this.service.findMany({
+      type,
+      subject,
+      topic,
+      id_chatbot_session,
+      examYear: examYear ? Number(examYear) : undefined,
+    });
+  }
+
+  @Get('enem/years')
+  async findEnemYears() {
+    return this.service.findEnemYears();
+  }
+
+  @Get('enem/:year/:number')
+  async findEnemQuestion(@Param('year') year: string, @Param('number') number: string) {
+    return this.service.findEnemQuestion(Number(year), Number(number));
   }
 
   @Get(':id')

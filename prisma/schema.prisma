@@ -83,19 +83,21 @@ enum ReviewDifficulty {
 model Question {
   id_question String @id @default(uuid(7))
 
-  statement     String
-  optionA       String
-  optionB       String
-  optionC       String
-  optionD       String
-  optionE       String
-  correctOption AnswerOption
-  explanation   String?
+  statement      String
+  statementImage String?
+  optionA        String
+  optionB        String
+  optionC        String
+  optionD        String
+  optionE        String
+  correctOption  AnswerOption
+  explanation    String?
 
-  type     QuestionType
-  subject  Subject
-  topic    String?
-  examYear Int?
+  type       QuestionType
+  subject    Subject?
+  topic      String?
+  examYear   Int?
+  examNumber Int?
 
   id_chatbot_session String?
   chatbotSession     ChatbotSession? @relation(fields: [id_chatbot_session], references: [id_chatbot_session])
@@ -105,6 +107,7 @@ model Question {
 
   attempts QuestionAttempt[]
 
+  @@unique([examYear, examNumber])
   @@map("questions")
 }
 
