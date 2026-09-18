@@ -1,14 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateFlashcardDTO } from './DTOs/createFlashcard.dto';
 import { UpdateFlashcardDTO } from './DTOs/updateFlashcard.dto';
 import { ReviewDifficulty, Subject } from '../../generated/prisma/client';
+
+// Formato ja normalizado pelo service (question/answer resolvidos pra string,
+// nunca undefined) -- diferente do CreateFlashcardDTO, que aceita omitir.
+export interface FlashcardCreateData {
+  question: string;
+  questionImage: string | null;
+  answer: string;
+  answerImage: string | null;
+  subject: Subject;
+  topic?: string;
+}
 
 @Injectable()
 export class FlashcardsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateFlashcardDTO, id_user: string) {
+  async create(data: FlashcardCreateData, id_user: string) {
     return this.prisma.flashcard.create({ data: { ...data, id_user } });
   }
 
@@ -31,10 +41,10 @@ export class FlashcardsRepository {
     return this.prisma.flashcard.delete({ where: { id_flashcard } });
   }
 
-  async createReview(id_flashcard: string, id_user: string, difficulty: ReviewDifficulty) {
+  async createReview(id_flashcard: string, id_user: string, difficulty: ReviewDifficulty, isCorrect: boolean) {
     const [review] = await this.prisma.$transaction([
       this.prisma.flashcardReview.create({
-        data: { id_flashcard, id_user, difficulty },
+        data: { id_flashcard, id_user, difficulty, isCorrect },
       }),
       this.prisma.flashcard.update({
         where: { id_flashcard },

@@ -5,9 +5,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { FlashcardsModule } from './modules/flashcards/flashcards.module';
 import { QuestionsModule } from './modules/questions/questions.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, ChatbotModule, FlashcardsModule, QuestionsModule],
+  imports: [PrismaModule, AuthModule, UsersModule, ChatbotModule, FlashcardsModule, QuestionsModule, UploadsModule],
   controllers: [],
   providers: [],
 })

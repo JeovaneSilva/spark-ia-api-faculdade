@@ -117,10 +117,12 @@ model Flashcard {
   id_user String
   user    User   @relation(fields: [id_user], references: [id_user])
 
-  question String
-  answer   String
-  subject  Subject
-  topic    String?
+  question      String
+  questionImage String?
+  answer        String
+  answerImage   String?
+  subject       Subject
+  topic         String?
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -193,6 +195,7 @@ model FlashcardReview {
   id_user String
   user    User   @relation(fields: [id_user], references: [id_user])
 
+  isCorrect  Boolean          @default(true)
   difficulty ReviewDifficulty
 
   reviewedAt DateTime @default(now())
