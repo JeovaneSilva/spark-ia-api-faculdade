@@ -41,7 +41,12 @@ export class FlashcardsRepository {
     return this.prisma.flashcard.delete({ where: { id_flashcard } });
   }
 
-  async createReview(id_flashcard: string, id_user: string, difficulty: ReviewDifficulty, isCorrect: boolean) {
+  async createReview(
+    id_flashcard: string,
+    id_user: string,
+    difficulty: ReviewDifficulty,
+    isCorrect: boolean,
+  ) {
     const [review] = await this.prisma.$transaction([
       this.prisma.flashcardReview.create({
         data: { id_flashcard, id_user, difficulty, isCorrect },

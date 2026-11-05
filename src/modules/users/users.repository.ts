@@ -12,7 +12,7 @@ export class UsersRepository {
     });
   }
 
-  async createFromGoogle(email:string, name:string) {
+  async createFromGoogle(email: string, name: string) {
     return this.prisma.user.create({
       data: {
         email,

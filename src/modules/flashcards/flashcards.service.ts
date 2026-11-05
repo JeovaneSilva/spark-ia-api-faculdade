@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FlashcardsRepository } from './flashcards.repository';
 import { CreateFlashcardDTO } from './DTOs/createFlashcard.dto';
 import { UpdateFlashcardDTO } from './DTOs/updateFlashcard.dto';
@@ -19,7 +23,14 @@ export class FlashcardsService {
     this.assertHasContent(answer, answerImage, 'A resposta');
 
     return this.repository.create(
-      { question, questionImage, answer, answerImage, subject: data.subject, topic: data.topic },
+      {
+        question,
+        questionImage,
+        answer,
+        answerImage,
+        subject: data.subject,
+        topic: data.topic,
+      },
       id_user,
     );
   }
@@ -38,21 +49,37 @@ export class FlashcardsService {
     return flashcard;
   }
 
-  async update(id_flashcard: string, id_user: string, data: UpdateFlashcardDTO) {
+  async update(
+    id_flashcard: string,
+    id_user: string,
+    data: UpdateFlashcardDTO,
+  ) {
     const existing = await this.findOwnedById(id_flashcard, id_user);
 
     // so recalcula o lado que veio no patch; o lado nao enviado mantem o
     // valor atual do banco, entao a validacao precisa olhar o resultado
     // combinado, nao so o que chegou nesse request.
-    const question = data.question !== undefined ? data.question.trim() : existing.question;
-    const questionImage = data.questionImage !== undefined ? data.questionImage : existing.questionImage;
-    const answer = data.answer !== undefined ? data.answer.trim() : existing.answer;
-    const answerImage = data.answerImage !== undefined ? data.answerImage : existing.answerImage;
+    const question =
+      data.question !== undefined ? data.question.trim() : existing.question;
+    const questionImage =
+      data.questionImage !== undefined
+        ? data.questionImage
+        : existing.questionImage;
+    const answer =
+      data.answer !== undefined ? data.answer.trim() : existing.answer;
+    const answerImage =
+      data.answerImage !== undefined ? data.answerImage : existing.answerImage;
 
     this.assertHasContent(question, questionImage, 'A pergunta');
     this.assertHasContent(answer, answerImage, 'A resposta');
 
-    return this.repository.update(id_flashcard, { ...data, question, questionImage, answer, answerImage });
+    return this.repository.update(id_flashcard, {
+      ...data,
+      question,
+      questionImage,
+      answer,
+      answerImage,
+    });
   }
 
   async delete(id_flashcard: string, id_user: string) {
@@ -60,9 +87,18 @@ export class FlashcardsService {
     return this.repository.delete(id_flashcard);
   }
 
-  async createReview(id_flashcard: string, id_user: string, data: CreateFlashcardReviewDTO) {
+  async createReview(
+    id_flashcard: string,
+    id_user: string,
+    data: CreateFlashcardReviewDTO,
+  ) {
     await this.findOwnedById(id_flashcard, id_user);
-    return this.repository.createReview(id_flashcard, id_user, data.difficulty, data.isCorrect);
+    return this.repository.createReview(
+      id_flashcard,
+      id_user,
+      data.difficulty,
+      data.isCorrect,
+    );
   }
 
   private assertHasContent(text: string, image: string | null, label: string) {

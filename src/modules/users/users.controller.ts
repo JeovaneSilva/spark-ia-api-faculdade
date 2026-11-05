@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator';
@@ -14,22 +23,28 @@ export class usersController {
   // Cadastro — precisa ficar público, é assim que a conta é criada.
   @Post()
   async createUser(@Body() data: CreateUserDTO) {
-   const user = await this.service.createUser(data);
-   return user ? 'Usuário criado com sucesso' : 'Erro ao criar usuário';
+    const user = await this.service.createUser(data);
+    return user ? 'Usuário criado com sucesso' : 'Erro ao criar usuário';
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  async findUserByEmail(@Query('email') email: string): Promise<ReturnUserDTO | null>  {
-    const user = await this.service.findUserByEmail(email)
-    return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
+  async findUserByEmail(
+    @Query('email') email: string,
+  ): Promise<ReturnUserDTO | null> {
+    const user = await this.service.findUserByEmail(email);
+    return user
+      ? { id_user: user.id_user, email: user.email, name: user.name }
+      : null;
   }
 
   // /me em vez de receber id_user por fora — só dá pra consultar/editar/
   // apagar a própria conta, o id vem do token, não do que o client manda.
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  async findMe(@CurrentUser() user: AuthenticatedUser): Promise<ReturnUserDTO | null> {
+  async findMe(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ReturnUserDTO | null> {
     return this.service.findUserById(user.id_user);
   }
 
@@ -41,7 +56,10 @@ export class usersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch('me')
-  async updateMe(@CurrentUser() user: AuthenticatedUser, @Body() data: UpdateUserDTO) {
+  async updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UpdateUserDTO,
+  ) {
     return this.service.updateUser(user.id_user, data);
   }
 }

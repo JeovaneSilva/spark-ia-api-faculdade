@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { QuestionsService } from './questions.service';
 import { QuestionType, Subject } from '../../generated/prisma/client';
@@ -36,7 +44,10 @@ export class QuestionsController {
   // precisa vir antes de enem/:year/:number, senão "progress" seria
   // interpretado como o parametro :number
   @Get('enem/:year/progress')
-  async findEnemProgress(@CurrentUser() user: AuthenticatedUser, @Param('year') year: string) {
+  async findEnemProgress(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('year') year: string,
+  ) {
     return this.service.findEnemProgress(Number(year), user.id_user);
   }
 
@@ -46,7 +57,11 @@ export class QuestionsController {
     @Param('year') year: string,
     @Param('number') number: string,
   ) {
-    return this.service.findEnemQuestion(Number(year), Number(number), user.id_user);
+    return this.service.findEnemQuestion(
+      Number(year),
+      Number(number),
+      user.id_user,
+    );
   }
 
   @Get(':id')

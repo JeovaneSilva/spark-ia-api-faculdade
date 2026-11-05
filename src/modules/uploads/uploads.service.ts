@@ -13,7 +13,11 @@ export class UploadsService {
     },
   });
 
-  async uploadImage(buffer: Buffer, contentType: string, folder: string): Promise<string> {
+  async uploadImage(
+    buffer: Buffer,
+    contentType: string,
+    folder: string,
+  ): Promise<string> {
     const extension = contentType.split('/')[1] ?? 'png';
     const key = `${folder}/${randomUUID()}.${extension}`;
 

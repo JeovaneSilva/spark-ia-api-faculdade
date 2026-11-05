@@ -1,4 +1,12 @@
-import { Body, Controller, Post, HttpCode, HttpStatus, Get, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  HttpCode,
+  HttpStatus,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDTO } from './DTOs/login.dto.js';
 import { AuthGuard } from '@nestjs/passport';
@@ -11,18 +19,17 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Body() signInDto:LoginDTO) {
+  signIn(@Body() signInDto: LoginDTO) {
     return this.authService.signIn(signInDto);
   }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  googleAuth() {
-  }
+  googleAuth() {}
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@CurrentUser() user: AuthenticatedUser){
+  googleAuthCallback(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.loginWithGoogle(user);
   }
 }

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AnswerOption, QuestionType, Subject } from '../../generated/prisma/client';
+import {
+  AnswerOption,
+  QuestionType,
+  Subject,
+} from '../../generated/prisma/client';
 
 export interface FindQuestionsFilter {
   type?: QuestionType;
@@ -20,7 +24,9 @@ export class QuestionsRepository {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.subject ? { subject: filter.subject } : {}),
         ...(filter.topic ? { topic: filter.topic } : {}),
-        ...(filter.id_chatbot_session ? { id_chatbot_session: filter.id_chatbot_session } : {}),
+        ...(filter.id_chatbot_session
+          ? { id_chatbot_session: filter.id_chatbot_session }
+          : {}),
         ...(filter.examYear ? { examYear: filter.examYear } : {}),
       },
       orderBy: filter.examYear ? { examNumber: 'asc' } : { createdAt: 'desc' },
@@ -38,7 +44,9 @@ export class QuestionsRepository {
       distinct: ['examYear'],
       orderBy: { examYear: 'desc' },
     });
-    return rows.map((row) => row.examYear).filter((year): year is number => year !== null);
+    return rows
+      .map((row) => row.examYear)
+      .filter((year): year is number => year !== null);
   }
 
   async findEnemQuestion(examYear: number, examNumber: number) {
@@ -54,7 +62,12 @@ export class QuestionsRepository {
     });
   }
 
-  async createAttempt(id_question: string, id_user: string, userAnswer: AnswerOption, isCorrect: boolean) {
+  async createAttempt(
+    id_question: string,
+    id_user: string,
+    userAnswer: AnswerOption,
+    isCorrect: boolean,
+  ) {
     return this.prisma.questionAttempt.create({
       data: { id_question, id_user, userAnswer, isCorrect },
     });
@@ -75,7 +88,9 @@ export class QuestionsRepository {
     ]);
 
     // ultima tentativa de cada questao vence (Map preserva a ultima inserção)
-    const latestByQuestion = new Map(attempts.map((attempt) => [attempt.id_question, attempt.isCorrect]));
+    const latestByQuestion = new Map(
+      attempts.map((attempt) => [attempt.id_question, attempt.isCorrect]),
+    );
 
     return questions.map((question) => ({
       examNumber: question.examNumber,

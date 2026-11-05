@@ -1,5 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { FindQuestionsFilter, QuestionsRepository } from './questions.repository';
+import {
+  FindQuestionsFilter,
+  QuestionsRepository,
+} from './questions.repository';
 import { AnswerOption } from '../../generated/prisma/client';
 
 @Injectable()
@@ -22,17 +25,29 @@ export class QuestionsService {
     return this.repository.findEnemYears();
   }
 
-  async findEnemQuestion(examYear: number, examNumber: number, id_user: string) {
-    const question = await this.repository.findEnemQuestion(examYear, examNumber);
+  async findEnemQuestion(
+    examYear: number,
+    examNumber: number,
+    id_user: string,
+  ) {
+    const question = await this.repository.findEnemQuestion(
+      examYear,
+      examNumber,
+    );
     if (!question) {
       throw new NotFoundException('Questão não encontrada');
     }
 
-    const attempt = await this.repository.findLatestAttempt(question.id_question, id_user);
+    const attempt = await this.repository.findLatestAttempt(
+      question.id_question,
+      id_user,
+    );
 
     return {
       ...question,
-      myAttempt: attempt ? { userAnswer: attempt.userAnswer, isCorrect: attempt.isCorrect } : null,
+      myAttempt: attempt
+        ? { userAnswer: attempt.userAnswer, isCorrect: attempt.isCorrect }
+        : null,
     };
   }
 
@@ -40,10 +55,19 @@ export class QuestionsService {
     return this.repository.findEnemProgress(examYear, id_user);
   }
 
-  async answerQuestion(id_question: string, id_user: string, answer: AnswerOption) {
+  async answerQuestion(
+    id_question: string,
+    id_user: string,
+    answer: AnswerOption,
+  ) {
     const question = await this.findById(id_question);
     const isCorrect = answer === question.correctOption;
-    await this.repository.createAttempt(id_question, id_user, answer, isCorrect);
+    await this.repository.createAttempt(
+      id_question,
+      id_user,
+      answer,
+      isCorrect,
+    );
 
     return {
       isCorrect,

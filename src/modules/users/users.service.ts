@@ -10,10 +10,10 @@ export type User = any;
 export class UsersService {
   constructor(private readonly repository: UsersRepository) {}
 
-  async findUserByEmail(email: string){
+  async findUserByEmail(email: string) {
     const user = await this.repository.findUserByEmail(email);
 
-    return user
+    return user;
   }
 
   async createUser(data: CreateUserDTO) {
@@ -22,10 +22,10 @@ export class UsersService {
       throw new ConflictException('Usuario já existe');
     }
     const hash = await bcrypt.hash(data.password, 10);
-    return this.repository.createUser({...data, password: hash});
+    return this.repository.createUser({ ...data, password: hash });
   }
 
-  async findOrCreateFromGoogle(email:string, name:string) {
+  async findOrCreateFromGoogle(email: string, name: string) {
     const userExist = await this.findUserByEmail(email);
     if (!userExist) {
       const newUser = await this.repository.createFromGoogle(email, name);
@@ -36,7 +36,9 @@ export class UsersService {
 
   async findUserById(id_user: string): Promise<ReturnUserDTO | null> {
     const user = await this.repository.findUserById(id_user);
-    return user ? {id_user: user.id_user, email: user.email, name: user.name} : null;
+    return user
+      ? { id_user: user.id_user, email: user.email, name: user.name }
+      : null;
   }
 
   async deleteUser(id_user: string): Promise<ReturnUserDTO> {
@@ -45,12 +47,16 @@ export class UsersService {
     return { id_user: user.id_user, email: user.email, name: user.name };
   }
 
-  async updateUser(id_user: string, data: Partial<CreateUserDTO>): Promise<ReturnUserDTO> {
-    const password = data.password ? await bcrypt.hash(data.password, 10) : undefined;
+  async updateUser(
+    id_user: string,
+    data: Partial<CreateUserDTO>,
+  ): Promise<ReturnUserDTO> {
+    const password = data.password
+      ? await bcrypt.hash(data.password, 10)
+      : undefined;
     const updatedData = { ...data, password };
     const user = await this.repository.updateUser(id_user, updatedData);
     // nunca devolver o hash da senha na resposta
     return { id_user: user.id_user, email: user.email, name: user.name };
   }
-
 }

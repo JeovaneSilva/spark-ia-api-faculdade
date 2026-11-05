@@ -8,7 +8,15 @@ import { QuestionsModule } from './modules/questions/questions.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, ChatbotModule, FlashcardsModule, QuestionsModule, UploadsModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    ChatbotModule,
+    FlashcardsModule,
+    QuestionsModule,
+    UploadsModule,
+  ],
   controllers: [],
   providers: [],
 })
