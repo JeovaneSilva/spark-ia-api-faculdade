@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AnswerOption } from '../../../generated/prisma/client';
+import { AnswerOption, Subject } from '../../../generated/prisma/client';
 import {
   GeneratedQuestion,
   GenerateQuestionsParams,
@@ -15,16 +15,23 @@ import {
  */
 @Injectable()
 export class FakeQuestionGenerator implements QuestionGenerator {
-  async generate({ topic, quantity }: GenerateQuestionsParams): Promise<GeneratedQuestion[]> {
+  async generate({
+    content,
+    quantity,
+  }: GenerateQuestionsParams): Promise<GeneratedQuestion[]> {
+    const preview =
+      content.length > 60 ? `${content.slice(0, 60)}...` : content;
     return Array.from({ length: quantity }, (_, index) => ({
-      statement: `[EXEMPLO] Questão ${index + 1} sobre "${topic}" — gerada pelo FakeQuestionGenerator.`,
+      statement: `[EXEMPLO] Questão ${index + 1} sobre "${preview}" — gerada pelo FakeQuestionGenerator.`,
       optionA: 'Alternativa A (exemplo)',
       optionB: 'Alternativa B (exemplo)',
       optionC: 'Alternativa C (exemplo)',
       optionD: 'Alternativa D (exemplo)',
       optionE: 'Alternativa E (exemplo)',
       correctOption: AnswerOption.A,
-      explanation: 'Explicação de exemplo — a implementação real vai preencher isso com uma justificativa de verdade.',
+      explanation:
+        'Explicação de exemplo — a implementação real vai preencher isso com uma justificativa de verdade.',
+      subject: Subject.PORTUGUES,
     }));
   }
 }

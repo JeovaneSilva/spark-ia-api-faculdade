@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { QuestionType, Subject } from '../../generated/prisma/client';
+import { QuestionType } from '../../generated/prisma/client';
 import { GeneratedQuestion } from './question-generator.interface';
 
 @Injectable()
@@ -13,16 +13,12 @@ export class ChatbotRepository {
     });
   }
 
-  async createQuestions(
-    id_chatbot_session: string,
-    subject: Subject,
-    topic: string,
-    questions: GeneratedQuestion[],
-  ) {
+  // subject vem em cada questao individualmente (classificado pelo gerador a
+  // partir do conteudo) -- nao e mais um valor unico pro lote inteiro.
+  async createQuestions(id_chatbot_session: string, topic: string, questions: GeneratedQuestion[]) {
     return this.prisma.question.createManyAndReturn({
       data: questions.map((question) => ({
         ...question,
-        subject,
         topic,
         type: QuestionType.CHATBOT_GENERATED,
         id_chatbot_session,

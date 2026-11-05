@@ -8,8 +8,8 @@ import { AnswerOption, Subject } from '../../generated/prisma/client';
 export const QUESTION_GENERATOR = Symbol('QUESTION_GENERATOR');
 
 export interface GenerateQuestionsParams {
-  topic: string;
-  subject: Subject;
+  /** Texto já extraído (artigo, trecho colado, ou apenas um tema curto) -- nunca uma URL crua. */
+  content: string;
   quantity: number;
 }
 
@@ -23,6 +23,8 @@ export interface GeneratedQuestion {
   optionE: string;
   correctOption: AnswerOption;
   explanation?: string;
+  // Não vem mais do cliente -- o gerador classifica a partir do conteúdo enviado.
+  subject: Subject;
 }
 
 export interface QuestionGenerator {

@@ -11,7 +11,10 @@ export class ChatbotController {
   constructor(private readonly service: ChatbotService) {}
 
   @Post('generate')
-  async generateQuestions(@CurrentUser() user: AuthenticatedUser, @Body() data: GenerateQuestionsDTO) {
+  async generateQuestions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: GenerateQuestionsDTO,
+  ) {
     return this.service.generateQuestions(data, user.id_user);
   }
 }
