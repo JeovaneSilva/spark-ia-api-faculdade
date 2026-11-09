@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator';
@@ -26,6 +26,12 @@ export class ChatbotController {
     @Body() data: RenameChatbotSessionDTO,
   ) {
     return this.service.renameSession(user.id_user, id, data.requestedTopic);
+  }
+
+  @Delete('sessions/:id')
+  async deleteSession(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    await this.service.deleteSession(user.id_user, id);
+    return { success: true };
   }
 
   @Post('generate')

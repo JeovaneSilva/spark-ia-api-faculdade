@@ -54,4 +54,8 @@ export class ChatbotService {
 
     return this.repository.updateSessionTitle(id_chatbot_session, id_user, trimmed);
   }
+
+  async deleteSession(id_user: string, id_chatbot_session: string) {
+    return this.repository.deleteSession(id_chatbot_session, id_user);
+  }
 }
