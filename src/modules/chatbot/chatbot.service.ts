@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ChatbotRepository } from './chatbot.repository';
 import { ContentExtractor } from './content-extractor';
 import { GenerateQuestionsDTO } from './DTOs/generateQuestions.dto';
@@ -33,5 +33,25 @@ export class ChatbotService {
     const questions = await this.repository.createQuestions(session.id_chatbot_session, topicPreview, drafts);
 
     return { session, questions };
+  }
+
+  async listSessions(id_user: string) {
+    const sessions = await this.repository.findSessionsByUser(id_user);
+
+    return sessions.map((session) => ({
+      id_chatbot_session: session.id_chatbot_session,
+      requestedTopic: session.requestedTopic,
+      createdAt: session.createdAt,
+      questionsCount: session.questions.length,
+    }));
+  }
+
+  async renameSession(id_user: string, id_chatbot_session: string, requestedTopic: string) {
+    const trimmed = requestedTopic.trim();
+    if (!trimmed) {
+      throw new BadRequestException('O nome da conversa não pode ficar vazio.');
+    }
+
+    return this.repository.updateSessionTitle(id_chatbot_session, id_user, trimmed);
   }
 }

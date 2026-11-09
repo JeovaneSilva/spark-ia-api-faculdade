@@ -13,6 +13,28 @@ export class ChatbotRepository {
     });
   }
 
+  async findSessionsByUser(id_user: string) {
+    return this.prisma.chatbotSession.findMany({
+      where: { id_user },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        questions: {
+          select: { id_question: true },
+        },
+      },
+    });
+  }
+
+  async updateSessionTitle(id_chatbot_session: string, id_user: string, requestedTopic: string) {
+    return this.prisma.chatbotSession.update({
+      where: {
+        id_chatbot_session,
+        id_user,
+      },
+      data: { requestedTopic },
+    });
+  }
+
   // subject vem em cada questao individualmente (classificado pelo gerador a
   // partir do conteudo) -- nao e mais um valor unico pro lote inteiro.
   async createQuestions(id_chatbot_session: string, topic: string, questions: GeneratedQuestion[]) {
