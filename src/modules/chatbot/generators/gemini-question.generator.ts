@@ -1,6 +1,7 @@
 import {
   Injectable,
   InternalServerErrorException,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
@@ -58,6 +59,7 @@ type RawGeneratedQuestion = Omit<GeneratedQuestion, 'correctOption' | 'subject'>
  */
 @Injectable()
 export class GeminiQuestionGenerator implements QuestionGenerator {
+  private readonly logger = new Logger(GeminiQuestionGenerator.name);
   private readonly client: GoogleGenAI;
   private readonly model: string;
 
@@ -101,37 +103,48 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
     }));
   }
 
-  // O Gemini devolve 503 "UNAVAILABLE" com uma certa frequência quando o
-  // modelo está sob alta demanda -- geralmente passa numa segunda tentativa
-  // alguns segundos depois. Uma tentativa extra evita expor esse erro
-  // transitório direto pro aluno.
+  // Sobrecarga, limite de requisições e falhas de rede costumam passar numa
+  // segunda tentativa alguns segundos depois.
   private async callWithRetry<T>(call: () => Promise<T>): Promise<T> {
     try {
       return await call();
     } catch (error) {
-      if (!this.isOverloadedError(error)) {
+      this.logFailure(error);
+      if (!this.isTransientError(error)) {
         throw this.toHttpException(error);
       }
       await new Promise((resolve) => setTimeout(resolve, 2000));
       try {
         return await call();
       } catch (retryError) {
+        this.logFailure(retryError);
         throw this.toHttpException(retryError);
       }
     }
   }
 
-  private isOverloadedError(error: unknown): boolean {
-    return (error as { status?: number })?.status === 503;
+  private logFailure(error: unknown): void {
+    const { status, message } = error as { status?: number; message?: string };
+    this.logger.error(
+      `Falha ao chamar o Gemini (status ${status ?? 'sem status'}): ${message}`,
+    );
+  }
+
+  // Sem status significa que a requisição nem chegou a ter resposta (erro de rede).
+  private isTransientError(error: unknown): boolean {
+    const status = (error as { status?: number })?.status;
+    return status === undefined || status === 429 || status >= 500;
   }
 
   private toHttpException(error: unknown): Error {
-    if (this.isOverloadedError(error)) {
+    if (this.isTransientError(error)) {
       return new ServiceUnavailableException(
         'O gerador de questões está sobrecarregado no momento. Tente novamente em instantes.',
       );
     }
-    return new InternalServerErrorException('Não foi possível gerar as questões agora.');
+    return new InternalServerErrorException(
+      'Não foi possível gerar as questões agora.',
+    );
   }
 
   private buildSystemInstruction(): string {
