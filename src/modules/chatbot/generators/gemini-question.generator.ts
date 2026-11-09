@@ -57,6 +57,9 @@ type RawGeneratedQuestion = Omit<GeneratedQuestion, 'correctOption' | 'subject'>
  * Troca a implementação fake sem tocar em controller/service — só muda o
  * provider registrado no ChatbotModule (ver QUESTION_GENERATOR_PROVIDER).
  */
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 2000;
+
 @Injectable()
 export class GeminiQuestionGenerator implements QuestionGenerator {
   private readonly logger = new Logger(GeminiQuestionGenerator.name);
@@ -103,22 +106,20 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
     }));
   }
 
-  // Sobrecarga, limite de requisições e falhas de rede costumam passar numa
-  // segunda tentativa alguns segundos depois.
+  // Sobrecarga, limite de requisições e falhas de rede costumam passar em
+  // poucos segundos.
   private async callWithRetry<T>(call: () => Promise<T>): Promise<T> {
-    try {
-      return await call();
-    } catch (error) {
-      this.logFailure(error);
-      if (!this.isTransientError(error)) {
-        throw this.toHttpException(error);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    for (let attempt = 1; ; attempt++) {
       try {
         return await call();
-      } catch (retryError) {
-        this.logFailure(retryError);
-        throw this.toHttpException(retryError);
+      } catch (error) {
+        this.logFailure(error);
+        if (attempt === MAX_ATTEMPTS || !this.isTransientError(error)) {
+          throw this.toHttpException(error);
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_BASE_DELAY_MS * attempt),
+        );
       }
     }
   }
@@ -126,14 +127,25 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
   private logFailure(error: unknown): void {
     const { status, message } = error as { status?: number; message?: string };
     this.logger.error(
-      `Falha ao chamar o Gemini (status ${status ?? 'sem status'}): ${message}`,
+      `Falha ao chamar o Gemini (status ${status ?? 'sem status'}): ${message?.slice(0, 300)}`,
     );
   }
 
   // Sem status significa que a requisição nem chegou a ter resposta (erro de rede).
   private isTransientError(error: unknown): boolean {
-    const status = (error as { status?: number })?.status;
-    return status === undefined || status === 429 || status >= 500;
+    const { status, message } = error as { status?: number; message?: string };
+    return (
+      status === undefined ||
+      status === 429 ||
+      status >= 500 ||
+      (status === 403 && this.isGoogleEdgeBlock(message))
+    );
+  }
+
+  // A infraestrutura do Google recusa parte das conexões vindas do Koyeb com uma
+  // página HTML; erros reais de chave ou permissão da API vêm em JSON.
+  private isGoogleEdgeBlock(message?: string): boolean {
+    return message?.includes('<!DOCTYPE html') ?? false;
   }
 
   private toHttpException(error: unknown): Error {
