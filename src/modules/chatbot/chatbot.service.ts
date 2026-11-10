@@ -26,7 +26,7 @@ export class ChatbotService {
       content.length > TOPIC_PREVIEW_CHARS
         ? `${content.slice(0, TOPIC_PREVIEW_CHARS)}...`
         : content;
-    const session = await this.repository.createSession(id_user, topicPreview);
+    const session = await this.repository.createSession(id_user, topicPreview, data.content);
 
     const drafts = await this.generator.generate({ content, quantity });
 
@@ -41,8 +41,27 @@ export class ChatbotService {
     return sessions.map((session) => ({
       id_chatbot_session: session.id_chatbot_session,
       requestedTopic: session.requestedTopic,
+      inputContent: session.inputContent,
       createdAt: session.createdAt,
-      questionsCount: session.questions.length,
+      questions: session.questions.map((question) => ({
+        id_question: question.id_question,
+        statement: question.statement,
+        statementImage: question.statementImage,
+        optionA: question.optionA,
+        optionB: question.optionB,
+        optionC: question.optionC,
+        optionD: question.optionD,
+        optionE: question.optionE,
+        correctOption: question.correctOption,
+        explanation: question.explanation,
+        subject: question.subject,
+        myAttempt: question.attempts[0]
+          ? {
+              userAnswer: question.attempts[0].userAnswer,
+              isCorrect: question.attempts[0].isCorrect,
+            }
+          : null,
+      })),
     }));
   }
 

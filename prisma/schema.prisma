@@ -161,6 +161,7 @@ model ChatbotSession {
   user    User   @relation(fields: [id_user], references: [id_user])
 
   requestedTopic String
+  inputContent   String?
 
   createdAt DateTime @default(now())
 

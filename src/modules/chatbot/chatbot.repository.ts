@@ -7,9 +7,9 @@ import { GeneratedQuestion } from './question-generator.interface';
 export class ChatbotRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createSession(id_user: string, requestedTopic: string) {
+  async createSession(id_user: string, requestedTopic: string, inputContent: string) {
     return this.prisma.chatbotSession.create({
-      data: { id_user, requestedTopic },
+      data: { id_user, requestedTopic, inputContent },
     });
   }
 
@@ -19,7 +19,17 @@ export class ChatbotRepository {
       orderBy: { createdAt: 'desc' },
       include: {
         questions: {
-          select: { id_question: true },
+          include: {
+            attempts: {
+              where: { id_user },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                userAnswer: true,
+                isCorrect: true,
+              },
+            },
+          },
         },
       },
     });
