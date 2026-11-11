@@ -7,7 +7,11 @@ import { GeneratedQuestion } from './question-generator.interface';
 export class ChatbotRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createSession(id_user: string, requestedTopic: string, inputContent: string) {
+  async createSession(
+    id_user: string,
+    requestedTopic: string,
+    inputContent: string,
+  ) {
     return this.prisma.chatbotSession.create({
       data: { id_user, requestedTopic, inputContent },
     });
@@ -35,7 +39,11 @@ export class ChatbotRepository {
     });
   }
 
-  async updateSessionTitle(id_chatbot_session: string, id_user: string, requestedTopic: string) {
+  async updateSessionTitle(
+    id_chatbot_session: string,
+    id_user: string,
+    requestedTopic: string,
+  ) {
     return this.prisma.chatbotSession.update({
       where: {
         id_chatbot_session,
@@ -54,9 +62,37 @@ export class ChatbotRepository {
     });
   }
 
+  // Filtra pelo dono da sessao para um usuario nao ler questao de outro.
+  async findQuestionOfUser(id_question: string, id_user: string) {
+    return this.prisma.question.findFirst({
+      where: { id_question, chatbotSession: { id_user } },
+    });
+  }
+
+  // Questao oficial do ENEM (publica) ou gerada numa conversa do proprio usuario.
+  async findAccessibleQuestion(id_question: string, id_user: string) {
+    return this.prisma.question.findFirst({
+      where: {
+        id_question,
+        OR: [{ type: 'ENEM_OFFICIAL' }, { chatbotSession: { id_user } }],
+      },
+    });
+  }
+
+  async findLatestAttempt(id_question: string, id_user: string) {
+    return this.prisma.questionAttempt.findFirst({
+      where: { id_question, id_user },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // subject vem em cada questao individualmente (classificado pelo gerador a
   // partir do conteudo) -- nao e mais um valor unico pro lote inteiro.
-  async createQuestions(id_chatbot_session: string, topic: string, questions: GeneratedQuestion[]) {
+  async createQuestions(
+    id_chatbot_session: string,
+    topic: string,
+    questions: GeneratedQuestion[],
+  ) {
     return this.prisma.question.createManyAndReturn({
       data: questions.map((question) => ({
         ...question,

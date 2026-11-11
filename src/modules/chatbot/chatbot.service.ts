@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ChatbotRepository } from './chatbot.repository';
 import { ContentExtractor } from './content-extractor';
 import { GenerateQuestionsDTO } from './DTOs/generateQuestions.dto';
@@ -26,11 +31,19 @@ export class ChatbotService {
       content.length > TOPIC_PREVIEW_CHARS
         ? `${content.slice(0, TOPIC_PREVIEW_CHARS)}...`
         : content;
-    const session = await this.repository.createSession(id_user, topicPreview, data.content);
+    const session = await this.repository.createSession(
+      id_user,
+      topicPreview,
+      data.content,
+    );
 
     const drafts = await this.generator.generate({ content, quantity });
 
-    const questions = await this.repository.createQuestions(session.id_chatbot_session, topicPreview, drafts);
+    const questions = await this.repository.createQuestions(
+      session.id_chatbot_session,
+      topicPreview,
+      drafts,
+    );
 
     return { session, questions };
   }
@@ -65,13 +78,73 @@ export class ChatbotService {
     }));
   }
 
-  async renameSession(id_user: string, id_chatbot_session: string, requestedTopic: string) {
+  // Devolve só o rascunho (pergunta curta + resposta + disciplina); quem salva
+  // o flashcard é o endpoint de flashcards, como qualquer outro cartão.
+  async createFlashcardDraft(id_user: string, id_question: string) {
+    const question = await this.repository.findQuestionOfUser(
+      id_question,
+      id_user,
+    );
+    if (!question) {
+      throw new NotFoundException('Questão não encontrada.');
+    }
+    if (!question.subject) {
+      throw new BadRequestException(
+        'Esta questão não tem disciplina definida.',
+      );
+    }
+
+    const draft = await this.generator.summarizeAsFlashcard(question);
+    return { ...draft, subject: question.subject };
+  }
+
+  // Tutor: explica o erro da última tentativa do aluno nessa questão.
+  async explainMistake(id_user: string, id_question: string) {
+    const question = await this.repository.findAccessibleQuestion(
+      id_question,
+      id_user,
+    );
+    if (!question) {
+      throw new NotFoundException('Questão não encontrada.');
+    }
+
+    const attempt = await this.repository.findLatestAttempt(
+      id_question,
+      id_user,
+    );
+    if (!attempt) {
+      throw new BadRequestException(
+        'Responda a questão antes de pedir a explicação.',
+      );
+    }
+    if (attempt.isCorrect) {
+      throw new BadRequestException(
+        'Você acertou essa questão — não há erro para explicar.',
+      );
+    }
+
+    const explanation = await this.generator.explainMistake({
+      question,
+      userAnswer: attempt.userAnswer,
+    });
+    return { explanation };
+  }
+
+  async renameSession(
+    id_user: string,
+    id_chatbot_session: string,
+    requestedTopic: string,
+  ) {
     const trimmed = requestedTopic.trim();
     if (!trimmed) {
       throw new BadRequestException('O nome da conversa não pode ficar vazio.');
     }
 
-    return this.repository.updateSessionTitle(id_chatbot_session, id_user, trimmed);
+    return this.repository.updateSessionTitle(
+      id_chatbot_session,
+      id_user,
+      trimmed,
+    );
   }
 
   async deleteSession(id_user: string, id_chatbot_session: string) {

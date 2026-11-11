@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import {
+  ExplainMistakeParams,
+  FlashcardDraft,
   GeneratedQuestion,
   GenerateQuestionsParams,
   QuestionGenerator,
+  QuestionToSummarize,
 } from '../question-generator.interface';
 import { AnswerOption, Subject } from '../../../generated/prisma/client';
 
@@ -47,7 +50,19 @@ const QUESTIONS_SCHEMA = {
   required: ['questions'],
 };
 
-type RawGeneratedQuestion = Omit<GeneratedQuestion, 'correctOption' | 'subject'> & {
+const FLASHCARD_SCHEMA = {
+  type: 'object',
+  properties: {
+    question: { type: 'string' },
+    answer: { type: 'string' },
+  },
+  required: ['question', 'answer'],
+};
+
+type RawGeneratedQuestion = Omit<
+  GeneratedQuestion,
+  'correctOption' | 'subject'
+> & {
   correctOption: string;
   subject: string;
 };
@@ -75,7 +90,10 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
     this.model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite';
   }
 
-  async generate({ content, quantity }: GenerateQuestionsParams): Promise<GeneratedQuestion[]> {
+  async generate({
+    content,
+    quantity,
+  }: GenerateQuestionsParams): Promise<GeneratedQuestion[]> {
     // Usa client.models.generateContent (API clássica), não client.interactions.create.
     // A Interactions API é a recomendada pela doc oficial, mas na prática ignorou o
     // response_format e devolveu texto livre em markdown em vez de JSON — testado e
@@ -94,16 +112,82 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
 
     const raw = response.text;
     if (!raw) {
-      throw new InternalServerErrorException('O Gemini não retornou nenhum conteúdo.');
+      throw new InternalServerErrorException(
+        'O Gemini não retornou nenhum conteúdo.',
+      );
     }
 
-    const parsed: { questions: RawGeneratedQuestion[] } = JSON.parse(raw);
+    const parsed: { questions: RawGeneratedQuestion[] } = JSON.parse(raw) as {
+      questions: RawGeneratedQuestion[];
+    };
 
     return parsed.questions.map((question) => ({
       ...question,
       correctOption: question.correctOption as AnswerOption,
       subject: question.subject as Subject,
     }));
+  }
+
+  async explainMistake({
+    question,
+    userAnswer,
+  }: ExplainMistakeParams): Promise<string> {
+    const response = await this.callWithRetry(() =>
+      this.client.models.generateContent({
+        model: this.model,
+        contents: [
+          this.buildFlashcardInput(question),
+          '',
+          `Alternativa marcada pelo aluno (errada): ${userAnswer}`,
+        ].join('\n'),
+        config: {
+          systemInstruction: [
+            'Você é um tutor de ENEM. O aluno errou a questão abaixo.',
+            'Explique em no máximo 5 frases: (1) por que a alternativa que ele marcou está errada, apontando o erro de raciocínio mais provável; (2) por que a alternativa correta está certa.',
+            'Seja direto e acolhedor, sem repetir o enunciado, sem "pensar em voz alta" e sem listas longas. Responda em português do Brasil, em texto corrido.',
+          ].join('\n'),
+        },
+      }),
+    );
+
+    const text = response.text?.trim();
+    if (!text) {
+      throw new InternalServerErrorException(
+        'O Gemini não retornou nenhum conteúdo.',
+      );
+    }
+    return text;
+  }
+
+  async summarizeAsFlashcard(
+    question: QuestionToSummarize,
+  ): Promise<FlashcardDraft> {
+    const response = await this.callWithRetry(() =>
+      this.client.models.generateContent({
+        model: this.model,
+        contents: this.buildFlashcardInput(question),
+        config: {
+          systemInstruction: this.buildFlashcardInstruction(),
+          responseMimeType: 'application/json',
+          responseJsonSchema: FLASHCARD_SCHEMA,
+        },
+      }),
+    );
+
+    const raw = response.text;
+    if (!raw) {
+      throw new InternalServerErrorException(
+        'O Gemini não retornou nenhum conteúdo.',
+      );
+    }
+
+    const draft: FlashcardDraft = JSON.parse(raw) as FlashcardDraft;
+    if (!draft.question?.trim() || !draft.answer?.trim()) {
+      throw new InternalServerErrorException(
+        'Não foi possível criar o flashcard agora.',
+      );
+    }
+    return { question: draft.question.trim(), answer: draft.answer.trim() };
   }
 
   // Sobrecarga, limite de requisições e falhas de rede costumam passar em
@@ -176,6 +260,35 @@ export class GeminiQuestionGenerator implements QuestionGenerator {
         ' conteúdo — não force um assunto que não tem relação nenhuma com o que foi enviado.',
       '',
       'Responda sempre em português do Brasil.',
+    ].join('\n');
+  }
+
+  private buildFlashcardInstruction(): string {
+    return [
+      'Você cria flashcards de estudo para o ENEM a partir de questões de múltipla escolha.',
+      'Um flashcard NÃO é a questão copiada: identifique o conceito central que a questão avalia e crie uma pergunta curta e direta sobre ele.',
+      'Regras da pergunta: no máximo ~140 caracteres, autossuficiente, sem citar alternativas, sem repetir o enunciado nem textos de apoio.',
+      'Regras da resposta: objetiva, 1 a 2 frases (no máximo ~250 caracteres), com o fato, definição ou fórmula que o aluno precisa lembrar.',
+      'Use a alternativa correta e a explicação como base da resposta. Responda sempre em português do Brasil.',
+    ].join('\n');
+  }
+
+  private buildFlashcardInput(question: QuestionToSummarize): string {
+    const options = [
+      `A) ${question.optionA}`,
+      `B) ${question.optionB}`,
+      `C) ${question.optionC}`,
+      `D) ${question.optionD}`,
+      `E) ${question.optionE}`,
+    ].join('\n');
+    return [
+      '--- QUESTÃO ---',
+      question.statement,
+      '',
+      options,
+      '',
+      `Alternativa correta: ${question.correctOption}`,
+      `Explicação: ${question.explanation ?? '(não informada)'}`,
     ].join('\n');
   }
 

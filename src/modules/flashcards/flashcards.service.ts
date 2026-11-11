@@ -8,6 +8,7 @@ import { CreateFlashcardDTO } from './DTOs/createFlashcard.dto';
 import { UpdateFlashcardDTO } from './DTOs/updateFlashcard.dto';
 import { CreateFlashcardReviewDTO } from './DTOs/createFlashcardReview.dto';
 import { Subject } from '../../generated/prisma/client';
+import { isDue, nextReviewAt } from './spaced-repetition';
 
 @Injectable()
 export class FlashcardsService {
@@ -35,8 +36,19 @@ export class FlashcardsService {
     );
   }
 
+  // Cada cartão volta com quando fica pendente (revisão espaçada) e se já está.
   async findByUser(id_user: string, subject?: Subject) {
-    return this.repository.findByUser(id_user, subject);
+    const flashcards = await this.repository.findByUser(id_user, subject);
+    const now = new Date();
+
+    return flashcards.map(({ reviews, ...flashcard }) => {
+      const next = nextReviewAt(reviews[0]);
+      return {
+        ...flashcard,
+        nextReviewAt: next,
+        isDue: isDue(next, now),
+      };
+    });
   }
 
   // 404 tanto se o flashcard nao existe quanto se existe mas e de outro

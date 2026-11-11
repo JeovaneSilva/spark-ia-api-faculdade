@@ -26,6 +26,10 @@ export class FlashcardsRepository {
     return this.prisma.flashcard.findMany({
       where: { id_user, ...(subject ? { subject } : {}) },
       orderBy: { createdAt: 'desc' },
+      // só a revisão mais recente: é o que define quando o cartão volta
+      include: {
+        reviews: { orderBy: { reviewedAt: 'desc' }, take: 1 },
+      },
     });
   }
 

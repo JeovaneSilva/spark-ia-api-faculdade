@@ -27,6 +27,30 @@ export interface GeneratedQuestion {
   subject: Subject;
 }
 
+/** Questão já existente (persistida) que o usuário quer virar flashcard. */
+export type QuestionToSummarize = Omit<
+  GeneratedQuestion,
+  'explanation' | 'subject'
+> & {
+  explanation?: string | null;
+};
+
+/** Cartão curto: pergunta direta sobre o conceito + resposta objetiva. */
+export interface FlashcardDraft {
+  question: string;
+  answer: string;
+}
+
+export interface ExplainMistakeParams {
+  question: QuestionToSummarize;
+  /** Alternativa que o aluno marcou (errada). */
+  userAnswer: AnswerOption;
+}
+
 export interface QuestionGenerator {
   generate(params: GenerateQuestionsParams): Promise<GeneratedQuestion[]>;
+  /** Explica por que a alternativa marcada está errada e por que o gabarito está certo. */
+  explainMistake(params: ExplainMistakeParams): Promise<string>;
+  /** Condensa uma questão de múltipla escolha em um flashcard (sem enunciado longo nem alternativas). */
+  summarizeAsFlashcard(question: QuestionToSummarize): Promise<FlashcardDraft>;
 }

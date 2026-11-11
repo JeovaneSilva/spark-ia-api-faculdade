@@ -73,6 +73,71 @@ export class QuestionsRepository {
     });
   }
 
+  async findEnemQuestionIds(subjects?: Subject[]) {
+    const rows = await this.prisma.question.findMany({
+      where: {
+        type: 'ENEM_OFFICIAL',
+        ...(subjects?.length ? { subject: { in: subjects } } : {}),
+      },
+      select: { id_question: true },
+    });
+    return rows.map((row) => row.id_question);
+  }
+
+  // Prova oficial: questões do ano num intervalo de numeração, na ordem da prova.
+  async findEnemExam(examYear: number, fromNumber: number, toNumber: number) {
+    return this.prisma.question.findMany({
+      where: {
+        type: 'ENEM_OFFICIAL',
+        examYear,
+        examNumber: { gte: fromNumber, lte: toNumber },
+      },
+      orderBy: { examNumber: 'asc' },
+    });
+  }
+
+  async findByIds(ids: string[]) {
+    return this.prisma.question.findMany({
+      where: { id_question: { in: ids } },
+    });
+  }
+
+  // Simulado = sessão de estudo do banco de questões; as tentativas ficam
+  // ligadas a ela. Tudo na mesma transação.
+  async createSimuladoAttempts(
+    id_user: string,
+    durationSeconds: number,
+    attempts: {
+      id_question: string;
+      userAnswer: AnswerOption;
+      isCorrect: boolean;
+    }[],
+    examYear?: number,
+  ) {
+    const endedAt = new Date();
+    const startedAt = new Date(endedAt.getTime() - durationSeconds * 1000);
+
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.studySession.create({
+        data: {
+          id_user,
+          type: 'QUESTION_BANK',
+          startedAt,
+          endedAt,
+          examYear,
+        },
+      });
+      await tx.questionAttempt.createMany({
+        data: attempts.map((attempt) => ({
+          ...attempt,
+          id_user,
+          id_study_session: session.id_study_session,
+        })),
+      });
+      return session;
+    });
+  }
+
   async findEnemProgress(examYear: number, id_user: string) {
     const [questions, attempts] = await Promise.all([
       this.prisma.question.findMany({

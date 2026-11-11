@@ -7,6 +7,7 @@ import {
   Get,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { LoginDTO } from './DTOs/login.dto.js';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,6 +18,8 @@ import type { AuthenticatedUser } from './decorators/current-user.decorator';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // Freia tentativa de adivinhar senha.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   signIn(@Body() signInDto: LoginDTO) {

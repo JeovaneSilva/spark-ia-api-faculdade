@@ -1,9 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 import { ChatbotService } from './chatbot.service';
 import { GenerateQuestionsDTO } from './DTOs/generateQuestions.dto';
+
+// Cada chamada de IA custa dinheiro e tempo: limite bem menor que o geral.
+const AI_THROTTLE = { default: { limit: 12, ttl: 60_000 } };
 
 class RenameChatbotSessionDTO {
   requestedTopic: string;
@@ -29,11 +42,33 @@ export class ChatbotController {
   }
 
   @Delete('sessions/:id')
-  async deleteSession(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+  async deleteSession(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
     await this.service.deleteSession(user.id_user, id);
     return { success: true };
   }
 
+  @Throttle(AI_THROTTLE)
+  @Post('questions/:id/flashcard')
+  async createFlashcardDraft(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.service.createFlashcardDraft(user.id_user, id);
+  }
+
+  @Throttle(AI_THROTTLE)
+  @Post('questions/:id/explain')
+  async explainMistake(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.service.explainMistake(user.id_user, id);
+  }
+
+  @Throttle(AI_THROTTLE)
   @Post('generate')
   async generateQuestions(
     @CurrentUser() user: AuthenticatedUser,
